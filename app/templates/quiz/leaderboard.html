@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Rankings - Quiz #{{ quiz.id }} - Quiz Master V1{% endblock %}
+
+{% block content %}
+<div class="wrapper animated-fade">
+    <!-- Header Section -->
+    <section class="header-section mb-5">
+        <div class="d-flex justify-content-between align-items-end">
+            <div class="title-wrapper">
+                <h1 class="display-5 fw-bold text-gradient">
+                    <i class="fas fa-crown me-3"></i>Elite Rankings
+                </h1>
+                <p class="text-secondary fs-5">
+                    Quiz #{{ quiz.id }} • {{ quiz.chapter.name }}
+                </p>
+            </div>
+            <a href="{{ url_for('user.list_quizzes', chapter_id=quiz.chapter.id) }}" class="btn btn-outline-dark btn-lg shadow-sm">
+                <i class="fas fa-chevron-left me-2"></i>Return to Quizzes
+            </a>
+        </div>
+    </section>
+
+    <!-- Statistics Grid -->
+    <section class="stats-grid mb-5">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card glass-effect">
+                    <i class="fas fa-users stat-icon text-primary"></i>
+                    <h3 class="stat-value">{{ leaderboard|length }}</h3>
+                    <p class="stat-title">Participants</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card glass-effect">
+                    <i class="fas fa-star stat-icon text-warning"></i>
+                    <h3 class="stat-value">{{ "%.1f"|format(leaderboard[0].percentage if leaderboard else 0) }}%</h3>
+                    <p class="stat-title">Top Score</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card glass-effect">
+                    <i class="fas fa-chart-bar stat-icon text-success"></i>
+                    <h3 class="stat-value">{{ "%.1f"|format(avg_score) }}%</h3>
+                    <p class="stat-title">Average</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card glass-effect">
+                    <i class="fas fa-check-double stat-icon text-info"></i>
+                    <h3 class="stat-value">{{ "%.1f"|format(pass_rate) }}%</h3>
+                    <p class="stat-title">Success Rate</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="row g-4">
+        <!-- Rankings Table -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-ranking-star me-2"></i>Hall of Fame
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th scope="col">Position</th>
+                                    <th scope="col">Participant</th>
+                                    <th scope="col">Result</th>
+                                    <th scope="col">Duration</th>
+                                    <th scope="col">Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in leaderboard %}
+                                <tr class="{{ 'bg-light-current' if entry.user_id == current_user.id }}">
+                                    <td class="fw-bold">
+                                        {% if loop.index <= 3 %}
+                                        <span class="medal medal-{{ loop.index }}"></span>
+                                        {% else %}
+                                        {{ loop.index }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="user-info">
+                                            <i class="fas fa-user-graduate me-2 text-indigo"></i>
+                                            {{ entry.user_name }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="score-badge {{ 'bg-success' if entry.percentage >= 60 else 'bg-danger' }}">
+                                            {{ "%.1f"|format(entry.percentage) }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ entry.time_taken }}</td>
+                                    <td>{{ entry.timestamp.strftime('%b %d, %Y %H:%M') }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="fas fa-award fa-3x text-secondary opacity-50 mb-3"></i>
+                                        <p class="text-muted fs-5">Awaiting Champions</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Performance Stats
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-book-open me-2"></i>Quiz Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-8">Questions</dt>
+                        <dd class="col-4 text-end">{{ quiz.questions|length }}</dd>
+                        <dt class="col-8">Time Allowed</dt>
+                        <dd class="col-4 text-end">{{ quiz.duration }} min</dd>
+                        <dt class="col-8">Quiz Date</dt>
+                        <dd class="col-4 text-end">{{ quiz.date.strftime('%d %b %Y') }}</dd>
+                        <dt class="col-8">Your Peak Score</dt>
+                        <dd class="col-4 text-end">
+                            <span class="badge {{ 'bg-success' if user_best_score >= 60 else 'bg-danger' }}">
+                                {{ "%.1f"|format(user_best_score) }}%
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chartCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceData = {
+        labels: ['Passing', 'Not Passing'],
+        datasets: [{
+            data: [{{ pass_count }}, {{ fail_count }}],
+            backgroundColor: ['#28a745', '#dc3545'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    };
+    const chartConfig = {
+        type: 'doughnut',
+        data: performanceData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: { size: 14 }
+                    }
+                }
+            }
+        }
+    };
+    new Chart(chartCtx, chartConfig);
+});
+</script>
+{% endblock %}

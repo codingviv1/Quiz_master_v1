@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Quiz Master V1{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+    <style>
+        /* Enhanced Navigation Bar Styles */
+        .qm-enhanced-nav {
+            background: linear-gradient(90deg, #1e3a8a 0%, #2b4db3 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            padding: 15px 0;
+            position: relative;
+            z-index: 1050; /* Ensure navbar is above other elements */
+        }
+        .qm-enhanced-nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0.3;
+            pointer-events: none; /* Prevent the pseudo-element from interfering with interactions */
+        }
+        .qm-nav-brand {
+            color: #fff !important;
+            font-weight: 600;
+            font-size: 1.6rem;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            animation: qm-glow 2s infinite alternate;
+        }
+        @keyframes qm-glow {
+            0% { text-shadow: 0 0 5px rgba(255,255,255,0.3); }
+            100% { text-shadow: 0 0 15px rgba(255,255,255,0.8), 0 0 25px #f97316; }
+        }
+        .qm-nav-link {
+            color: #e2e8f0 !important;
+            font-weight: 500;
+            padding: 10px 20px;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .qm-nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 20px;
+            width: 0;
+            height: 2px;
+            background: #f97316;
+            transition: width 0.3s ease;
+        }
+        .qm-nav-link:hover::after {
+            width: calc(100% - 40px);
+        }
+        .qm-nav-link:hover {
+            color: #f97316 !important;
+        }
+        .qm-nav-dropdown-toggle {
+            color: #e2e8f0 !important;
+            font-weight: 500;
+            padding: 10px 20px;
+        }
+        .qm-nav-dropdown-toggle:hover {
+            color: #f97316 !important;
+        }
+        .qm-nav-dropdown-menu {
+            background: #fff;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            animation: qm-dropdown-fade 0.3s ease;
+            margin-top: 10px;
+            z-index: 1060; /* Ensure dropdown is above all other elements */
+        }
+        @keyframes qm-dropdown-fade {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .qm-nav-dropdown-item {
+            color: #1e3a8a;
+            padding: 12px 25px;
+            transition: background 0.3s, color 0.3s;
+            position: relative;
+        }
+        .qm-nav-dropdown-item:hover {
+            background: #f97316;
+            color: #fff;
+        }
+        .qm-nav-dropdown-item::before {
+            content: '\f054'; /* Font Awesome chevron-right icon */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .qm-nav-dropdown-item:hover::before {
+            opacity: 1;
+        }
+        .qm-nav-dropdown-item:hover {
+            padding-left: 35px;
+        }
+        .navbar-toggler {
+            border: none;
+        }
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(255, 255, 255, 0.8)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="qm-enhanced-nav navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="qm-nav-brand navbar-brand d-flex align-items-center" href="{{ url_for('user.dashboard' if not current_user.is_admin else 'admin.dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                Quiz Master V1
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                        <!-- Admin Navigation -->
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="qm-nav-link nav-link" href="{{ url_for('admin.dashboard') }}">
+                                    <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="qm-nav-link nav-link" href="{{ url_for('admin.manage_subjects') }}">
+                                    <i class="fas fa-book me-1"></i> Subjects
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="qm-nav-link nav-link" href="{{ url_for('admin.manage_users') }}">
+                                    <i class="fas fa-users me-1"></i> Users
+                                </a>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <!-- User Navigation -->
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="qm-nav-link nav-link" href="{{ url_for('user.dashboard') }}">
+                                    <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="qm-nav-link nav-link" href="{{ url_for('user.list_subjects') }}">
+                                    <i class="fas fa-book me-1"></i> Subjects
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="qm-nav-link nav-link" href="{{ url_for('user.view_scores') }}">
+                                    <i class="fas fa-chart-bar me-1"></i> My Scores
+                                </a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    <!-- User Profile Dropdown -->
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="qm-nav-link qm-nav-dropdown-toggle nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i>
+                                {{ current_user.full_name }}
+                            </a>
+                            <ul class="qm-nav-dropdown-menu dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="qm-nav-dropdown-item dropdown-item" href="{{ url_for('auth.logout') }}">
+                                        <i class="fas fa-sign-out-alt me-1"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer bg-white py-4 mt-auto border-top">
+        <div class="container text-center">
+            <span class="text-muted">© 2025 Quiz Master V1. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

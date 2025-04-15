@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Take Quiz - {{ quiz.chapter.name }} - Quiz Master V1{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Quiz Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 text-gray-800">
+                <i class="fas fa-clipboard-list me-2"></i>{{ quiz.chapter.name }}
+            </h1>
+            <p class="text-muted mb-0">Chapter: {{ quiz.chapter.name }} | Subject: {{ quiz.chapter.subject.name }}</p>
+        </div>
+        <div class="timer-container">
+            <span class="timer-label">Time Remaining:</span>
+            <span id="timer" class="timer" data-duration="{{ quiz.time_duration }}">00:00</span>
+        </div>
+    </div>
+
+    <!-- Quiz Form -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form id="quizForm" method="POST" action="{{ url_for('user.submit_quiz', quiz_id=quiz.id) }}" onsubmit="return confirmSubmit()">
+                <input type="hidden" name="time_taken" id="time_taken" value="00:00">
+                
+                {% for question in questions %}
+                <div class="question-container mb-4">
+                    <h5 class="question-number">Question {{ loop.index }}</h5>
+                    <p class="question-text">{{ question.question_statement }}</p>
+                    
+                    <div class="options-container">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" 
+                                   id="option1_{{ question.id }}" value="1" required>
+                            <label class="form-check-label" for="option1_{{ question.id }}">
+                                {{ question.option1 }}
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" 
+                                   id="option2_{{ question.id }}" value="2" required>
+                            <label class="form-check-label" for="option2_{{ question.id }}">
+                                {{ question.option2 }}
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" 
+                                   id="option3_{{ question.id }}" value="3" required>
+                            <label class="form-check-label" for="option3_{{ question.id }}">
+                                {{ question.option3 }}
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" 
+                                   id="option4_{{ question.id }}" value="4" required>
+                            <label class="form-check-label" for="option4_{{ question.id }}">
+                                {{ question.option4 }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-check me-2"></i>Submit Quiz
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Quiz Submission -->
+<div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="submitModalLabel">Submit Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to submit the quiz?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitQuiz()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Quiz Timer
+    const timerElement = document.getElementById('timer');
+    const timeTakenInput = document.getElementById('time_taken');
+    const duration = parseInt(timerElement.dataset.duration) * 60; // Convert minutes to seconds
+    let timeLeft = duration;
+    let timeSpent = 0;
+
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('quizForm').submit();
+        }
+        
+        timeLeft--;
+        timeSpent++;
+    }
+
+    const timerInterval = setInterval(updateTimer, 1000);
+
+    // Form Submission
+    document.getElementById('quizForm').addEventListener('submit', function(e) {
+        const minutes = Math.floor(timeSpent / 60);
+        const seconds = timeSpent % 60;
+        timeTakenInput.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    });
+
+    // Question Navigation
+    const questions = document.querySelectorAll('.question-container');
+    questions.forEach((question, index) => {
+        const questionNumber = document.createElement('div');
+        questionNumber.className = 'question-number';
+        questionNumber.textContent = `Question ${index + 1}`;
+        question.insertBefore(questionNumber, question.firstChild);
+    });
+});
+
+function confirmSubmit() {
+    // Check if all questions are answered
+    const form = document.getElementById('quizForm');
+    const questions = form.querySelectorAll('.question-container');
+    let allAnswered = true;
+    
+    questions.forEach((question, index) => {
+        const options = question.querySelectorAll('input[type="radio"]');
+        const answered = Array.from(options).some(option => option.checked);
+        if (!answered) {
+            allAnswered = false;
+        }
+    });
+    
+    if (!allAnswered) {
+        alert('Please answer all questions before submitting.');
+        return false;
+    }
+    
+    // Show confirmation dialog
+    if (confirm('Are you sure you want to submit the quiz?')) {
+        return true;
+    }
+    return false;
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Quiz Master V1{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom Styles for Manage Users */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8fafc;
+    }
+    .qm-container {
+        padding: 30px;
+    }
+    .qm-fade-in {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .qm-header {
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
+    }
+    .qm-title {
+        color: #1e3a8a;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    .qm-subtitle {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+    .qm-panel {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 25px;
+    }
+    .qm-user-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .qm-user-item {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid #e2e8f0;
+    }
+    .qm-user-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .qm-user-info {
+        flex: 1;
+    }
+    .qm-user-name {
+        color: #1e3a8a;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+    }
+    .qm-user-details {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+    .qm-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f97316;
+        color: white;
+        text-decoration: none;
+    }
+    .qm-button:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+    .qm-button i {
+        margin-right: 8px;
+    }
+    .qm-button.qm-button-danger {
+        background: #dc2626;
+    }
+    .qm-button.qm-button-danger:hover {
+        background: #b91c1c;
+    }
+    .qm-button.qm-button-secondary {
+        background: #64748b;
+    }
+    .qm-button.qm-button-secondary:hover {
+        background: #475569;
+    }
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1055;
+    }
+    .modal.show {
+        display: flex !important;
+    }
+    .modal-dialog {
+        width: 95%;
+        max-width: 500px;
+        margin: 1.75rem auto;
+        position: relative;
+    }
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    .modal-header {
+        background: #1e3a8a;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+    .modal-body {
+        padding: 1.5rem;
+    }
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    .qm-empty-state {
+        text-align: center;
+        padding: 40px;
+    }
+    .qm-empty-state i {
+        font-size: 3rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+    }
+    .qm-empty-state h5 {
+        color: #1e3a8a;
+        margin-bottom: 0.5rem;
+    }
+    .qm-empty-state p {
+        color: #64748b;
+    }
+</style>
+
+<div class="qm-container qm-fade-in">
+    <header class="qm-header">
+        <div>
+            <h1 class="qm-title h3">
+                <i class="fas fa-users me-2"></i>Manage Users
+            </h1>
+            <p class="qm-subtitle">View and manage registered users</p>
+        </div>
+    </header>
+
+    <section class="qm-panel">
+        {% if users %}
+        <div class="qm-user-list">
+            {% for user in users %}
+            <div class="qm-user-item">
+                <div class="qm-user-info">
+                    <p class="qm-user-name">{{ user.full_name }}</p>
+                    <p class="qm-user-details">
+                        <i class="fas fa-envelope me-1"></i> {{ user.email }}
+                        <span class="mx-2">|</span>
+                        <i class="fas fa-graduation-cap me-1"></i> {{ user.qualification or 'N/A' }}
+                        <span class="mx-2">|</span>
+                        <i class="fas fa-calendar me-1"></i> Joined {{ user.created_at.strftime('%Y-%m-%d') }}
+                    </p>
+                </div>
+                <button type="button" class="qm-button qm-button-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+            <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Confirm Delete</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete {{ user.full_name }}?</p>
+                            <p class="text-danger"><strong>Warning:</strong> All user data will be deleted.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="qm-button qm-button-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="qm-button qm-button-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="qm-empty-state">
+            <i class="fas fa-users"></i>
+            <h5>No Users Found</h5>
+            <p>No registered users available.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modals = document.querySelectorAll('.modal');
+    
+    modals.forEach(modal => {
+        const closeButton = modal.querySelector('[data-bs-dismiss="modal"]');
+        
+        function closeModal() {
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+            modal.style.display = 'none';
+        }
+
+        if (closeButton) {
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal();
+            });
+        }
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Ensure modal content clicks don't propagate
+        modal.querySelector('.modal-content').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('show')) {
+                closeModal();
+            }
+        });
+
+        // Handle opening the modal
+        const trigger = document.querySelector(`[data-bs-target="#${modal.id}"]`);
+        if (trigger) {
+            trigger.addEventListener('click', function() {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                modal.style.display = 'flex';
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

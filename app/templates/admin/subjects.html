@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Subjects - Quiz Master V1{% endblock %}
+
+{% block content %}
+<style>
+    .qm-subject-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+    .qm-subject-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .qm-subject-card h6 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+        color: #1e3a8a;
+    }
+    .qm-subject-card p {
+        color: #64748b;
+        margin-bottom: 15px;
+    }
+    .qm-subject-card .chapters-count {
+        color: #1e3a8a;
+        font-weight: 500;
+        margin-bottom: 15px;
+    }
+    .qm-header {
+        padding: 20px;
+    }
+    .qm-title {
+        color: #1e3a8a;
+        font-weight: 600;
+    }
+    /* Button styles */
+    .qm-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+        background: #f97316;
+        color: white;
+    }
+    .qm-button:hover {
+        transform: translateY(-1px);
+        color: white;
+    }
+    .qm-button i {
+        margin-right: 8px;
+    }
+    .qm-button.qm-button-danger {
+        background: #dc2626;
+    }
+    .qm-button.qm-button-secondary {
+        background: #64748b;
+    }
+    .qm-button.qm-button-danger:hover {
+        background: #b91c1c;
+    }
+    .qm-button.qm-button-secondary:hover {
+        background: #475569;
+    }
+    .qm-button + .qm-button {
+        margin-left: 8px;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="qm-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="qm-title h3">
+                <i class="fas fa-book me-2"></i>Manage Subjects
+            </h1>
+            <p class="text-muted">Organize your subjects</p>
+        </div>
+        <div>
+            <button type="button" class="qm-button" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                <i class="fas fa-plus"></i>Add
+            </button>
+            <a href="{{ url_for('admin.dashboard') }}" class="qm-button qm-button-secondary">
+                <i class="fas fa-arrow-left"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <div class="qm-subject-grid">
+        {% if subjects %}
+            {% for subject in subjects %}
+            <div class="qm-subject-card">
+                <h6>{{ subject.name }}</h6>
+                <p>{{ subject.description }}</p>
+                <p class="chapters-count"><strong>Chapters:</strong> {{ subject.chapters|length }}</p>
+                <div class="d-flex">
+                    <a href="{{ url_for('admin.manage_chapters', subject_id=subject.id) }}" class="qm-button">
+                        <i class="fas fa-list"></i>Chapters
+                    </a>
+                    <a href="{{ url_for('admin.edit_subject', subject_id=subject.id) }}" class="qm-button">
+                        <i class="fas fa-edit"></i>Edit
+                    </a>
+                    <button type="button" class="qm-button qm-button-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ subject.id }}">
+                        <i class="fas fa-trash"></i>Delete
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Delete Modal -->
+            <div class="modal fade" id="deleteModal{{ subject.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">Confirm Delete</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to delete "{{ subject.name }}"?</p>
+                            <p class="text-danger"><strong>Warning:</strong> All chapters and quizzes will be deleted.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="qm-button qm-button-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form action="{{ url_for('admin.delete_subject', subject_id=subject.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="qm-button qm-button-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h5>No Subjects Yet</h5>
+                <p>Add a subject to get started.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Add New Subject</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="name">Subject Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="qm-button qm-button-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="qm-button">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Take Quiz - {{ quiz.title }} - Quiz Master V1{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Quiz Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 text-gray-800">
+                <i class="fas fa-clipboard-list me-2"></i>{{ quiz.title }}
+            </h1>
+            <p class="text-muted mb-0">
+                Chapter: {{ quiz.chapter.name }} | Subject: {{ quiz.chapter.subject.name }}
+            </p>
+        </div>
+        <div class="col-md-4">
+            <div class="quiz-timer" id="quiz-timer" data-duration="{{ quiz.duration }}">
+                <i class="fas fa-clock me-2"></i>Time Remaining: <span>00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Form -->
+    <form id="quiz-form" method="POST" action="{{ url_for('user.submit_quiz', quiz_id=quiz.id) }}">
+        <!-- Question Navigation -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for question in questions %}
+                    <button type="button" class="btn btn-outline-primary question-nav" 
+                            data-question="{{ loop.index0 }}">
+                        Question {{ loop.index }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions -->
+        {% for question in questions %}
+        <div class="card shadow mb-4 question-card" data-question="{{ loop.index0 }}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Question {{ loop.index }}</h5>
+                    <span class="badge bg-primary">{{ question.points }} points</span>
+                </div>
+                <p class="card-text">{{ question.question_text }}</p>
+                
+                <!-- Options -->
+                <div class="options-container">
+                    {% for option in question.options %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" 
+                               name="answer_{{ question.id }}" 
+                               id="option_{{ question.id }}_{{ loop.index0 }}"
+                               value="{{ loop.index0 }}" required>
+                        <label class="form-check-label" for="option_{{ question.id }}_{{ loop.index0 }}">
+                            {{ option }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    {% if not loop.first %}
+                    <button type="button" class="btn btn-secondary prev-question">
+                        <i class="fas fa-arrow-left me-2"></i>Previous
+                    </button>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                    
+                    {% if not loop.last %}
+                    <button type="button" class="btn btn-primary next-question">
+                        Next<i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Submit Quiz
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize quiz timer
+    const timerElement = document.getElementById('quiz-timer');
+    const duration = parseInt(timerElement.dataset.duration);
+    const timer = new QuizTimer(duration, timerElement.querySelector('span'), () => {
+        document.getElementById('quiz-form').submit();
+    });
+    timer.start();
+
+    // Question Navigation
+    const questionCards = document.querySelectorAll('.question-card');
+    const questionNavs = document.querySelectorAll('.question-nav');
+    let currentQuestion = 0;
+
+    function showQuestion(index) {
+        questionCards.forEach(card => card.style.display = 'none');
+        questionCards[index].style.display = 'block';
+        questionNavs.forEach(nav => nav.classList.remove('active'));
+        questionNavs[index].classList.add('active');
+        currentQuestion = index;
+    }
+
+    // Initialize first question
+    showQuestion(0);
+
+    // Navigation button handlers
+    document.querySelectorAll('.next-question').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (currentQuestion < questionCards.length - 1) {
+                showQuestion(currentQuestion + 1);
+            }
+        });
+    });
+
+    document.querySelectorAll('.prev-question').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (currentQuestion > 0) {
+                showQuestion(currentQuestion - 1);
+            }
+        });
+    });
+
+    // Question nav buttons
+    questionNavs.forEach((nav, index) => {
+        nav.addEventListener('click', () => {
+            showQuestion(index);
+        });
+    });
+
+    // Form submission
+    document.getElementById('quiz-form').addEventListener('submit', function(e) {
+        const unanswered = document.querySelectorAll('input[type="radio"]:not(:checked)');
+        if (unanswered.length > 0) {
+            e.preventDefault();
+            if (confirm('You have unanswered questions. Are you sure you want to submit?')) {
+                this.submit();
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Review - Quiz #{{ quiz.id }} - Quiz Master V1{% endblock %}
+
+{% block content %}
+<div class="main-container slide-in-effect">
+    <!-- Header Area -->
+    <section class="header-area mb-5">
+        <div class="row align-items-end">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold text-vivid">
+                    <i class="fas fa-medal me-3"></i>Your Performance
+                </h1>
+                <p class="text-secondary fs-5">
+                    Quiz #{{ quiz.id }} • {{ quiz.chapter.name }}
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('quiz.leaderboard', quiz_id=quiz.id) }}" class="btn btn-primary btn-lg shadow-sm me-2">
+                    <i class="fas fa-crown me-2"></i>View Rankings
+                </a>
+                <a href="{{ url_for('user.list_quizzes', chapter_id=quiz.chapter.id) }}" class="btn btn-outline-dark btn-lg shadow-sm">
+                    <i class="fas fa-book-open me-2"></i>Back to Quizzes
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Performance Highlights -->
+    <section class="highlights-grid mb-5">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="highlight-box crystal-effect">
+                    <i class="fas fa-star highlight-icon text-warning"></i>
+                    <h3 class="highlight-value">{{ "%.1f"|format(score_percentage) }}%</h3>
+                    <p class="highlight-label">Achievement</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="highlight-box crystal-effect">
+                    <i class="fas fa-stopwatch highlight-icon text-info"></i>
+                    <h3 class="highlight-value">{{ time_taken }}</h3>
+                    <p class="highlight-label">Duration</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="highlight-box crystal-effect">
+                    <i class="fas fa-check-double highlight-icon text-success"></i>
+                    <h3 class="highlight-value">{{ score.total_scored }}/{{ score.total_questions }}</h3>
+                    <p class="highlight-label">Successes</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="highlight-box crystal-effect">
+                    <i class="fas fa-users highlight-icon text-primary"></i>
+                    <h3 class="highlight-value">{{ "%.1f"|format(avg_score) }}%</h3>
+                    <p class="highlight-label">Group Average</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <div class="row g-4">
+        <!-- Answer Breakdown -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-scroll me-2"></i>Answer Analysis
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% for question in questions %}
+                    <div class="answer-block p-4 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold">Task {{ loop.index }}</h6>
+                            <span class="result-tag {{ 'bg-emerald' if question.is_correct else 'bg-rose' }}">
+                                {{ 'Mastered' if question.is_correct else 'Missed' }}
+                            </span>
+                        </div>
+                        <p class="question-text mb-3">{{ question.question_text }}</p>
+                        <div class="choices-list">
+                            {% for option in question.options %}
+                            <div class="choice-item mb-2">
+                                <input type="radio" class="choice-marker" disabled
+                                       {% if loop.index0 == question.user_answer %}checked{% endif %}>
+                                <label class="choice-text {{ 'text-emerald' if loop.index0 == question.correct_answer }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if not question.is_correct %}
+                        <div class="feedback-note mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Solution: {{ question.options[question.correct_answer] }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Insights -->
+        <div class="col-lg-4">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>Results Snapshot
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="visual-container">
+                        <canvas id="resultsVisual"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-stats me-2"></i>Quiz Insights
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-8">Challenges</dt>
+                        <dd class="col-4 text-end">{{ score.total_questions }}</dd>
+                        <dt class="col-8">Victories</dt>
+                        <dd class="col-4 text-end">{{ score.total_scored }}</dd>
+                        <dt class="col-8">Time Spent</dt>
+                        <dd class="col-4 text-end">{{ time_taken }}</dd>
+                        <dt class="col-8">Success Rate</dt>
+                        <dd class="col-4 text-end">
+                            <span class="badge {{ 'bg-emerald' if score_percentage >= 60 else 'bg-rose' }}">
+                                {{ "%.1f"|format(score_percentage) }}%
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const visualCtx = document.getElementById('resultsVisual').getContext('2d');
+    const visualData = {
+        labels: ['Wins', 'Losses'],
+        datasets: [{
+            data: [{{ score.total_scored }}, {{ score.total_questions - score.total_scored }}],
+            backgroundColor: ['#20c997', '#dc3545'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+        }]
+    };
+    const visualConfig = {
+        type: 'doughnut',
+        data: visualData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '50%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 15, font: { size: 13 } }
+                }
+            }
+        }
+    };
+    new Chart(visualCtx, visualConfig);
+});
+</script>
+{% endblock %}

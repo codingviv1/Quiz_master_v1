@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} Chapters - Quiz Master V1{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 text-gray-800">
+                <i class="fas fa-book me-2"></i>{{ subject.name }}
+            </h1>
+            <p class="text-muted mb-0">{{ subject.description }}</p>
+        </div>
+        <a href="{{ url_for('user.list_subjects') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-2"></i>Return to Subjects
+        </a>
+    </div>
+
+    <!-- Chapter Progress -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number">{{ chapters|length }}</div>
+                    <div class="stats-label">Chapter Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number">
+                        {% set total_quizzes = namespace(count=0) %}
+                        {% for chapter in chapters %}
+                            {% set total_quizzes.count = total_quizzes.count + chapter.quizzes|length %}
+                        {% endfor %}
+                        {{ total_quizzes.count }}
+                    </div>
+                    <div class="stats-label">All Quizzes</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number">
+                        {% set completed = namespace(count=0) %}
+                        {% for chapter in chapters %}
+                            {% for quiz in chapter.quizzes %}
+                                {% if quiz.id in completed_quizzes %}
+                                    {% set completed.count = completed.count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                        {{ completed.count }}
+                    </div>
+                    <div class="stats-label">Finished Quizzes</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number">
+                        {{ "%.1f"|format((completed.count / total_quizzes.count * 100) if total_quizzes.count > 0 else 0) }}%
+                    </div>
+                    <div class="stats-label">Completion Rate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chapters Grid -->
+    <div class="row">
+        {% for chapter in chapters %}
+        <div class="col-xl-6 col-md-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ chapter.name }}</h5>
+                        <span class="badge bg-primary">Quizzes: {{ chapter.quizzes|length }}</span>
+                    </div>
+                    <p class="card-text text-muted">{{ chapter.description }}</p>
+                    
+                    <!-- Quizzes List -->
+                    <div class="quizzes-list mb-3">
+                        <h6 class="text-primary mb-2">Quizzes Offered:</h6>
+                        <div class="list-group list-group-flush">
+                            {% for quiz in chapter.quizzes %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Quiz Number {{ loop.index }}</h6>
+                                        <small class="text-muted">
+                                            {{ quiz.questions|length }} questions • {{ quiz.time_duration }} mins
+                                        </small>
+                                    </div>
+                                    {% if quiz.id in completed_quizzes %}
+                                    <a href="{{ url_for('user.quiz_result', quiz_id=quiz.id) }}" 
+                                        class="btn btn-sm btn-success" aria-label="See quiz outcome">
+                                        <i class="fas fa-check-circle me-1"></i>Check Result
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('user.start_quiz', quiz_id=quiz.id) }}" 
+                                        class="btn btn-sm btn-primary" aria-label="Launch quiz">
+                                        <i class="fas fa-play me-1"></i>Launch Quiz
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Chapter Progress -->
+                    <div class="chapter-progress">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Progress Within Chapter</small>
+                            <small class="text-muted">
+                                {% set completed = namespace(count=0) %}
+                                {% for quiz in chapter.quizzes %}
+                                    {% if quiz.id in completed_quizzes %}
+                                        {% set completed.count = completed.count + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ completed.count }} of {{ chapter.quizzes|length }} quizzes
+                            </small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {{ (completed.count / chapter.quizzes|length * 100) if chapter.quizzes|length > 0 else 0 }}%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No chapters present currently</h4>
+                <p class="text-muted">More chapters will be available soon.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

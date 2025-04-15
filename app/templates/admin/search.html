@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Quiz Master V1{% endblock %}
+
+{% block content %}
+<style>
+    .qm-search-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .qm-result-tab {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="qm-container qm-fade-in">
+    <header class="qm-header d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="qm-title h3">
+                <i class="fas fa-search me-2"></i>Search
+            </h1>
+            <p class="text-muted">Explore users, subjects, and more</p>
+        </div>
+        <a href="{{ url_for('admin.dashboard') }}" class="qm-btn qm-btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </header>
+
+    <section class="qm-panel">
+        <form method="GET" class="qm-search-bar mb-4">
+            <input type="text" class="qm-input flex-grow-1" name="q" value="{{ query or '' }}" placeholder="Search..." required>
+            <select class="qm-input" name="type">
+                <option value="all" {% if type == 'all' %}selected{% endif %}>All</option>
+                <option value="users" {% if type == 'users' %}selected{% endif %}>Users</option>
+                <option value="subjects" {% if type == 'subjects' %}selected{% endif %}>Subjects</option>
+                <option value="chapters" {% if type == 'chapters' %}selected{% endif %}>Chapters</option>
+                <option value="quizzes" {% if type == 'quizzes' %}selected{% endif %}>Quizzes</option>
+            </select>
+            <button type="submit" class="qm-btn"><i class="fas fa-search"></i></button>
+        </form>
+
+        {% if results %}
+            {% if results.users %}
+            <div class="qm-result-tab">
+                <h5>Users</h5>
+                <ul class="list-unstyled">
+                    {% for user in results.users %}
+                    <li>{{ user.full_name }} - {{ user.email }} (Joined: {{ user.created_at.strftime('%Y-%m-%d') }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if results.subjects %}
+            <div class="qm-result-tab">
+                <h5>Subjects</h5>
+                <ul class="list-unstyled">
+                    {% for subject in results.subjects %}
+                    <li>{{ subject.name }} - {{ subject.chapters|length }} chapters 
+                        <a href="{{ url_for('admin.edit_subject', subject_id=subject.id) }}" class="qm-btn ms-2">Edit</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if results.chapters %}
+            <div class="qm-result-tab">
+                <h5>Chapters</h5>
+                <ul class="list-unstyled">
+                    {% for chapter in results.chapters %}
+                    <li>{{ chapter.name }} ({{ chapter.subject.name }}) - {{ chapter.quizzes|length }} quizzes 
+                        <a href="{{ url_for('admin.edit_chapter', chapter_id=chapter.id) }}" class="qm-btn ms-2">Edit</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if results.quizzes %}
+            <div class="qm-result-tab">
+                <h5>Quizzes</h5>
+                <ul class="list-unstyled">
+                    {% for quiz in results.quizzes %}
+                    <li>{{ quiz.chapter.name }} - {{ quiz.date_of_quiz.strftime('%Y-%m-%d %H:%M') }} 
+                        <a href="{{ url_for('admin.edit_quiz', quiz_id=quiz.id) }}" class="qm-btn ms-2">Edit</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if not results.users and not results.subjects and not results.chapters and not results.quizzes %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>No Results Found</h5>
+                <p>Try a different search term.</p>
+            </div>
+            {% endif %}
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

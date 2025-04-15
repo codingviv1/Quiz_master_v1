@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}
+Quiz Master V1 - Subject List
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4" id="header-section">
+        <h1 class="h3 text-gray-800">
+            <i class="fas fa-book me-2"></i>Explore Subjects
+        </h1>
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary" aria-label="Navigate back to dashboard">
+            <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+        </a>
+    </div>
+
+    <!-- Subject Catalog -->
+    <div class="row" id="subject-grid">
+        {% for subject in subjects %}
+        <!-- Subject Card -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ subject.name }}</h5>
+                        <span class="badge bg-primary">{{ subject.chapters|length }} modules</span>
+                    </div>
+                    <p class="card-text text-muted">{{ subject.description }}</p>
+
+                    <!-- Topics List -->
+                    <div class="chapters-list mb-3">
+                        <h6 class="text-primary mb-2">Topics:</h6>
+                        <div class="list-group list-group-flush">
+                            {% for chapter in subject.chapters %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ chapter.name }}</h6>
+                                        <small class="text-muted">
+                                            {{ chapter.quizzes|length }} assessments
+                                        </small>
+                                    </div>
+                                    <a href="{{ url_for('user.list_quizzes', chapter_id=chapter.id) }}"
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="View Assessments" 
+                                       aria-label="View assessments for {{ chapter.name }}">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Subject Statistics -->
+                    <div class="subject-stats">
+                        {% set quiz_total = namespace(value=0) %}
+                        {% for chapter in subject.chapters %}
+                            {% set quiz_total.value = quiz_total.value + chapter.quizzes|length %}
+                        {% endfor %}
+                        {% set completed_count = namespace(value=0) %}
+                        {% for chapter in subject.chapters %}
+                            {% for quiz in chapter.quizzes %}
+                                {% if quiz.id in completed_quizzes %}
+                                    {% set completed_count.value = completed_count.value + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                        {% set progress = (completed_count.value / quiz_total.value * 100) if quiz_total.value > 0 else 0 %}
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <small class="text-muted d-block">Total Assessments</small>
+                                    <strong>{{ quiz_total.value }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <small class="text-muted d-block">Completion Progress</small>
+                                    <strong>{{ "%.1f"|format(progress) }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="progress" title="Completion Progress: {{ progress }}%">
+                        <div class="progress-bar bg-primary" 
+                             role="progressbar" 
+                             style="width: {{ progress }}%" 
+                             aria-valuenow="{{ progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Currently, no courses are available</h4>
+                <p class="text-muted">Please revisit soon for new additions.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

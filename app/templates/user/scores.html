@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}
+Quiz Master V1 - My Performance
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4" id="header-section">
+        <div>
+            <h1 class="h3 text-gray-800">
+                <i class="fas fa-chart-bar me-2"></i>My Quiz Results
+            </h1>
+            <p class="text-muted mb-0">Review your quiz scores and history</p>
+        </div>
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary" aria-label="Navigate back to dashboard">
+            <i class="fas fa-arrow-left me-2"></i>Return to Dashboard
+        </a>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="row mb-4" id="metrics-row">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Number of quizzes you have taken">{{ scores|length }}</div>
+                    <div class="stats-label">Quizzes Attempted</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Your highest score percentage">
+                        {% if scores %}
+                            {% set max_score = namespace(value=0) %}
+                            {% for score in scores %}
+                                {% set percentage = (score.total_scored / score.total_questions) * 100 %}
+                                {% if percentage > max_score.value %}
+                                    {% set max_score.value = percentage %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ "%.1f"|format(max_score.value) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div class="stats-label">Top Score</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Your average score percentage">
+                        {% if scores %}
+                            {% set sum_scores = namespace(value=0) %}
+                            {% for score in scores %}
+                                {% set percentage = (score.total_scored / score.total_questions) * 100 %}
+                                {% set sum_scores.value = sum_scores.value + percentage %}
+                            {% endfor %}
+                            {{ "%.1f"|format(sum_scores.value / scores|length) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div class="stats-label">Average Performance</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Percentage of quizzes passed">
+                        {% if scores %}
+                            {% set pass_count = namespace(value=0) %}
+                            {% for score in scores %}
+                                {% set percentage = (score.total_scored / score.total_questions) * 100 %}
+                                {% if percentage >= 60 %}
+                                    {% set pass_count.value = pass_count.value + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ "%.1f"|format((pass_count.value / scores|length) * 100) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div class="stats-label">Success Rate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Performance History -->
+    <div class="card shadow mb-4" id="history-card">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-history me-2"></i>Performance History
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if scores %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Quiz ID</th>
+                            <th>Module</th>
+                            <th>Course</th>
+                            <th>Result</th>
+                            <th>Duration</th>
+                            <th>Completed On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for score in scores %}
+                        <tr>
+                            <td>Quiz {{ score.quiz.id }}</td>
+                            <td>{{ score.quiz.chapter.name }}</td>
+                            <td>{{ score.quiz.chapter.subject.name }}</td>
+                            <td>
+                                {% set percentage = (score.total_scored / score.total_questions) * 100 %}
+                                <span class="badge {% if percentage >= 60 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ "%.1f"|format(percentage) }}%
+                                </span>
+                                <small class="text-muted">({{ score.total_scored }}/{{ score.total_questions }})</small>
+                            </td>
+                            <td>{{ score.time_taken }}</td>
+                            <td>{{ score.timestamp.strftime('%d %b %Y, %I:%M %p') }}</td>
+                            <td>
+                                <a href="{{ url_for('user.quiz_result', quiz_id=score.quiz.id) }}" 
+                                    class="btn btn-sm btn-primary" aria-label="View detailed result">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Quiz Records Found</h5>
+                <p class="text-muted mb-0">Start taking quizzes to view your performance history.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

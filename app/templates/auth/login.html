@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Quiz Master V1{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom Styles for Login Page */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f8fafc;
+    }
+    .qm-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+        background: #fff;
+        max-width: 500px;
+        margin: 2rem auto;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .qm-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    }
+    .qm-card-header {
+        background: #1e3a8a;
+        color: #fff;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        transition: background-color 0.3s ease;
+    }
+    .qm-card:hover .qm-card-header {
+        background: #1e40af;
+    }
+    .qm-card-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+    .qm-card-title i {
+        font-size: 1.5rem;
+        transition: transform 0.3s ease;
+    }
+    .qm-card:hover .qm-card-title i {
+        transform: rotate(10deg);
+    }
+    .qm-card-body {
+        padding: 2.5rem 2rem;
+    }
+    .qm-input-group {
+        margin-bottom: 1.5rem;
+    }
+    .qm-label {
+        color: #1e3a8a;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        display: block;
+    }
+    .qm-input {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        background: #fff;
+    }
+    .qm-input:hover {
+        border-color: #94a3b8;
+        background: #f8fafc;
+    }
+    .qm-input:focus {
+        border-color: #1e3a8a;
+        box-shadow: 0 0 0 3px rgba(30,58,138,0.1);
+        outline: none;
+        background: #fff;
+    }
+    .input-group-text {
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+        color: #64748b;
+        padding: 0 1rem;
+        transition: all 0.3s ease;
+    }
+    .input-group:hover .input-group-text {
+        border-color: #94a3b8;
+        color: #1e3a8a;
+    }
+    .input-group:focus-within .input-group-text {
+        border-color: #1e3a8a;
+        color: #1e3a8a;
+    }
+    .qm-input-with-icon {
+        border-radius: 0 8px 8px 0;
+        border-left: none;
+    }
+    .qm-btn-primary {
+        background: #1e3a8a;
+        border: none;
+        border-radius: 8px;
+        padding: 0.875rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: white;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .qm-btn-primary:hover {
+        background: #1e40af;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30,58,138,0.2);
+    }
+    .qm-btn-primary:active {
+        transform: translateY(0);
+    }
+    .qm-btn-primary i {
+        transition: transform 0.3s ease;
+    }
+    .qm-btn-primary:hover i {
+        transform: translateX(3px);
+    }
+    .qm-card-footer {
+        background: #f8fafc;
+        padding: 1.5rem;
+        text-align: center;
+        border-top: 1px solid #e2e8f0;
+    }
+    .qm-footer-link {
+        color: #1e3a8a;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        position: relative;
+        padding-bottom: 2px;
+    }
+    .qm-footer-link::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: 0;
+        left: 0;
+        background-color: #1e40af;
+        transition: width 0.3s ease;
+    }
+    .qm-footer-link:hover {
+        color: #1e40af;
+    }
+    .qm-footer-link:hover::after {
+        width: 100%;
+    }
+    .fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="qm-card fade-in">
+            <div class="qm-card-header">
+                <h3 class="qm-card-title">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </h3>
+            </div>
+            <div class="qm-card-body">
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="qm-input-group">
+                        <label class="qm-label" for="email">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input class="qm-input qm-input-with-icon" id="email" name="email" type="email" 
+                                placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                    <div class="qm-input-group">
+                        <label class="qm-label" for="password">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input class="qm-input qm-input-with-icon" id="password" name="password" 
+                                type="password" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="qm-btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="qm-card-footer">
+                <a href="{{ url_for('auth.register') }}" class="qm-footer-link">
+                    Need an account? Sign up
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

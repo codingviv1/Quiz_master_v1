@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Master V1 - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Welcome Message -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800">
+            <i class="fas fa-tachometer-alt me-2"></i>Welcome, {{ current_user.full_name }}!
+        </h1>
+        <a href="{{ url_for('user.list_subjects') }}" class="btn btn-primary">
+            <i class="fas fa-book me-2"></i>Explore Subjects
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Quizzes Attempted</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" title="Number of quizzes you have attempted">{{ recent_scores|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Top Score</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" title="Your highest score percentage">
+                                {% if recent_scores %}
+                                    {% set max_score = namespace(value=0) %}
+                                    {% for score in recent_scores %}
+                                        {% set percentage = (score.total_scored / score.total_questions) * 100 %}
+                                        {% if percentage > max_score.value %}
+                                            {% set max_score.value = percentage %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ "%.1f"|format(max_score.value) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-trophy fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Overall Average</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" title="Your average score percentage">
+                                {% if recent_scores %}
+                                    {% set sum_scores = namespace(total=0) %}
+                                    {% for score in recent_scores %}
+                                        {% set percentage = (score.total_scored / score.total_questions) * 100 %}
+                                        {% set sum_scores.total = sum_scores.total + percentage %}
+                                    {% endfor %}
+                                    {{ "%.1f"|format(sum_scores.total / recent_scores|length) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-bar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Subjects</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" title="Number of subjects available">{{ subjects|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-book fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Performance Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Score Trends
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:300px;">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Quiz Attempts -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clock me-2"></i>Latest Quiz Attempts
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_scores %}
+                        <div class="list-group list-group-flush">
+                            {% for score in recent_scores %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ score.quiz.chapter.subject.name }}</h6>
+                                        <small class="text-muted" title="{{ score.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">{{ score.timestamp.strftime('%b %d, %Y') }}</small>
+                                    </div>
+                                    <p class="mb-1">Chapter: {{ score.quiz.chapter.name }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Correct: {{ score.total_scored }} / {{ score.total_questions }}</small>
+                                        <span class="badge bg-primary">{{ "%.1f"|format((score.total_scored / score.total_questions) * 100) }}%</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No quiz attempts recorded yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Subjects -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-book me-2"></i>Subject List
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for subject in subjects %}
+                        <div class="col-xl-4 col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title" title="{{ subject.description }}">{{ subject.name }}</h5>
+                                    <p class="card-text text-muted">{{ subject.description }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="small text-muted">
+                                            {{ subject.chapters|length }} chapters
+                                        </div>
+                                        <a href="{{ url_for('user.list_chapters', subject_id=subject.id) }}" 
+                                            class="btn btn-sm btn-primary">
+                                            <i class="fas fa-arrow-right"></i>
+                                            <span class="sr-only">View Chapters</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize chart context
+    const chartContext = document.getElementById('performanceChart').getContext('2d');
+    // Fetch user performance data
+    fetch('{{ url_for("user.get_user_scores") }}')
+        .then(response => response.json())
+        .then(data => {
+            // Transform data for chart
+            const userPerformance = data.map(score => ({
+                quiz_name: `${score.quiz_name}`,
+                percentage: score.percentage
+            })).reverse();
+            
+            new Chart(chartContext, {
+                type: 'line',
+                data: {
+                    labels: userPerformance.map(score => score.quiz_name),
+                    datasets: [{
+                        label: 'Score Percentage',
+                        data: userPerformance.map(score => score.percentage),
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: value => value + '%'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            // Handle errors
+            console.error('Error loading performance data:', error);
+            document.getElementById('performanceChart').parentElement.innerHTML = 
+                '<div class="text-center py-4"><i class="fas fa-chart-line fa-3x text-muted mb-3"></i><p class="text-muted mb-0">Failed to load performance data</p></div>';
+        });
+});
+</script>
+{% endblock %}

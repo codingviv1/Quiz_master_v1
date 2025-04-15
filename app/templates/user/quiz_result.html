@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}
+Quiz Outcome for {{ quiz.chapter.name }} - Quiz Master V1
+{% endblock %}
+
+{% block content %}
+{% set percentage = (score.total_scored / score.total_questions) * 100 %}
+<div class="container-fluid fade-in">
+    <!-- Page Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4" id="header-section">
+        <div>
+            <h1 class="h3 text-gray-800">
+                <i class="fas fa-chart-bar me-2"></i>Your Quiz Performance
+            </h1>
+            <p class="text-muted mb-0">{{ quiz.chapter.subject.name }} | {{ quiz.chapter.name }}</p>
+        </div>
+        <a href="{{ url_for('user.list_quizzes', chapter_id=quiz.chapter.id) }}" class="btn btn-secondary" aria-label="Navigate back to quiz list">
+            <i class="fas fa-arrow-left me-2"></i>Return to Quiz List
+        </a>
+    </div>
+
+    <!-- Performance Statistics -->
+    <div class="row mb-4" id="stats-row">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Your achieved score percentage">
+                        {{ "%.1f"|format(percentage) }}%
+                    </div>
+                    <div class="stats-label">Your Score</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Number of correct responses">
+                        {{ score.total_scored }}/{{ score.total_questions }}
+                    </div>
+                    <div class="stats-label">Right Answers</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Duration of quiz completion">
+                        {{ score.time_taken }}
+                    </div>
+                    <div class="stats-label">Duration</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-number" title="Your performance grade">
+                        {% if percentage >= 90 %}A+
+                        {% elif percentage >= 80 %}A
+                        {% elif percentage >= 70 %}B
+                        {% elif percentage >= 60 %}C
+                        {% else %}F
+                        {% endif %}
+                    </div>
+                    <div class="stats-label">Your Grade</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Quiz Information -->
+    <div class="card shadow mb-4" id="details-card">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>Quiz Information
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <tr>
+                        <th scope="row" width="200">Course</th>
+                        <td>{{ quiz.chapter.subject.name }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Module</th>
+                        <td>{{ quiz.chapter.name }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Completion Date</th>
+                        <td>{{ score.timestamp.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Allocated Time</th>
+                        <td>{{ quiz.time_duration }} minutes</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Time Used</th>
+                        <td>{{ score.time_taken }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Number of Questions</th>
+                        <td>{{ score.total_questions }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Correct Responses</th>
+                        <td>{{ score.total_scored }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Percentage Score</th>
+                        <td>
+                            <span class="badge {% if percentage >= 60 %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ "%.1f"|format(percentage) }}%
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Outcome</th>
+                        <td>
+                            {% if percentage >= 60 %}
+                            <span class="text-success">
+                                <i class="fas fa-check-circle me-1"></i>Success
+                            </span>
+                            {% else %}
+                            <span class="text-danger">
+                                <i class="fas fa-times-circle me-1"></i>Needs Improvement
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Actions -->
+    <div class="d-flex justify-content-between" id="actions-section">
+        <a href="{{ url_for('user.list_quizzes', chapter_id=quiz.chapter.id) }}" class="btn btn-secondary" aria-label="Return to quiz list page">
+            <i class="fas fa-arrow-left me-2"></i>Return to Quiz List
+        </a>
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary" aria-label="Navigate to user dashboard">
+            <i class="fas fa-home me-2"></i>Return to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
