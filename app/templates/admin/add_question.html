@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add Question to Quiz</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="question_type">Question Type:</label>
+            <select class="form-control" id="question_type" name="question_type" onchange="showQuestionForm()" required>
+                <option value="">Select Question Type</option>
+                <option value="mcq">Multiple Choice</option>
+                <option value="true_false">True/False</option>
+                <option value="fill_blank">Fill in the Blank</option>
+                <option value="matching">Matching Pairs</option>
+                <option value="short_answer">Short Answer</option>
+                <option value="image">Image-based Question</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="question_statement">Question Statement:</label>
+            <textarea class="form-control" id="question_statement" name="question_statement" rows="3" required></textarea>
+        </div>
+
+        <!-- Multiple Choice Options -->
+        <div id="mcq_form" style="display: none;">
+            <div class="form-group">
+                <label>Options:</label>
+                {% for i in range(1, 5) %}
+                <input type="text" class="form-control mb-2" name="option{{ i }}" placeholder="Option {{ i }}">
+                {% endfor %}
+                <label>Correct Option:</label>
+                <select class="form-control" name="correct_option">
+                    {% for i in range(1, 5) %}
+                    <option value="{{ i }}">Option {{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- True/False Options -->
+        <div id="true_false_form" style="display: none;">
+            <div class="form-group">
+                <label>Correct Answer:</label>
+                <select class="form-control" name="correct_answer">
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Fill in the Blank Options -->
+        <div id="fill_blank_form" style="display: none;">
+            <div class="form-group">
+                <label>Correct Answer:</label>
+                <input type="text" class="form-control" name="correct_answer">
+            </div>
+        </div>
+
+        <!-- Matching Pairs Options -->
+        <div id="matching_form" style="display: none;">
+            <div class="form-group">
+                <label>Number of Pairs:</label>
+                <input type="number" class="form-control mb-2" name="pair_count" id="pair_count" min="2" max="6" value="2" onchange="generatePairs()">
+                <div id="pairs_container"></div>
+            </div>
+        </div>
+
+        <!-- Short Answer Options -->
+        <div id="short_answer_form" style="display: none;">
+            <div class="form-group">
+                <label>Expected Answer:</label>
+                <textarea class="form-control" name="expected_answer" rows="3"></textarea>
+            </div>
+        </div>
+
+        <!-- Image-based Question Options -->
+        <div id="image_form" style="display: none;">
+            <div class="form-group">
+                <label>Upload Image:</label>
+                <input type="file" class="form-control-file" name="image" accept="image/*">
+                <label class="mt-2">Correct Answer:</label>
+                <input type="text" class="form-control" name="image_answer">
+            </div>
+        </div>
+
+        <!-- Question Metadata -->
+        <div class="card mt-4 mb-4">
+            <div class="card-header">
+                <h4>Question Details</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="difficulty">Difficulty Level:</label>
+                    <select class="form-control" id="difficulty" name="difficulty">
+                        <option value="1">Easy</option>
+                        <option value="2">Medium-Easy</option>
+                        <option value="3">Medium</option>
+                        <option value="4">Medium-Hard</option>
+                        <option value="5">Hard</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tags">Tags (comma-separated):</label>
+                    <input type="text" class="form-control" id="tags" name="tags" placeholder="e.g., math, algebra, equations">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Question</button>
+        <a href="{{ url_for('admin.edit_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+{% block scripts %}
+<script>
+function showQuestionForm() {
+    // Hide all forms first
+    document.getElementById('mcq_form').style.display = 'none';
+    document.getElementById('true_false_form').style.display = 'none';
+    document.getElementById('fill_blank_form').style.display = 'none';
+    document.getElementById('matching_form').style.display = 'none';
+    document.getElementById('short_answer_form').style.display = 'none';
+    document.getElementById('image_form').style.display = 'none';
+
+    // Show selected form
+    const questionType = document.getElementById('question_type').value;
+    if (questionType) {
+        document.getElementById(questionType + '_form').style.display = 'block';
+    }
+}
+
+function generatePairs() {
+    const container = document.getElementById('pairs_container');
+    const pairCount = document.getElementById('pair_count').value;
+    let html = '';
+    
+    for (let i = 0; i < pairCount; i++) {
+        html += `
+            <div class="row mb-2">
+                <div class="col">
+                    <input type="text" class="form-control" name="left_${i}" placeholder="Left Item ${i + 1}">
+                </div>
+                <div class="col">
+                    <input type="text" class="form-control" name="right_${i}" placeholder="Right Item ${i + 1}">
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}
+{% endblock %} 

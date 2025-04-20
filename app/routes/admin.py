@@ -10,6 +10,8 @@ from app import db
 from datetime import datetime
 from functools import wraps
 from sqlalchemy import func
+from werkzeug.utils import secure_filename
+import os
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -36,7 +38,7 @@ def dashboard():
     
     # Get recent users and scores
     recent_users = User.query.filter_by(is_admin=False).order_by(User.created_at.desc()).limit(5).all()
-    recent_scores = Score.query.order_by(Score.timestamp.desc()).limit(5).all()
+    recent_scores = Score.query.order_by(Score.completed_at.desc()).limit(5).all()
     
     # Get all subjects for the overview section
     subjects = Subject.query.all()
@@ -262,36 +264,82 @@ def manage_questions(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
     
     if request.method == 'POST':
-        question_statement = request.form.get('question_text')
-        option1 = request.form.get('option_a')
-        option2 = request.form.get('option_b')
-        option3 = request.form.get('option_c')
-        option4 = request.form.get('option_d')
-        correct_option = request.form.get('correct_option')
-        
-        if not all([question_statement, option1, option2, option3, option4, correct_option]):
-            flash('All fields are required!', 'danger')
+        try:
+            question_type = request.form.get('type')
+            question_text = request.form.get('text')
+            marks = float(request.form.get('marks', 1.0))
+            
+            if not question_text:
+                flash('Question text is required!', 'danger')
+                return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+            
+            question = Question(
+                quiz_id=quiz_id,
+                question_type=question_type,
+                question_statement=question_text,
+                marks=marks,
+                difficulty=1  # Default difficulty
+            )
+            
+            if question_type == 'mcq':
+                # Validate MCQ options
+                options = [
+                    request.form.get('option_0'),
+                    request.form.get('option_1'),
+                    request.form.get('option_2'),
+                    request.form.get('option_3')
+                ]
+                if not all(options):
+                    flash('All MCQ options are required!', 'danger')
+                    return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+                
+                question.option1 = options[0]
+                question.option2 = options[1]
+                question.option3 = options[2]
+                question.option4 = options[3]
+                correct_option = request.form.get('correct_option')
+                if correct_option is None:
+                    flash('Please select the correct option!', 'danger')
+                    return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+                question.correct_option = int(correct_option) + 1
+                
+            elif question_type == 'tf':
+                correct_answer = request.form.get('correct_answer')
+                if correct_answer not in ['true', 'false']:
+                    flash('Please select either True or False!', 'danger')
+                    return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+                question.correct_option = 1 if correct_answer == 'true' else 2
+                question.option1 = 'True'
+                question.option2 = 'False'
+                
+            elif question_type == 'fib':
+                correct_answer = request.form.get('correct_answer')
+                if not correct_answer:
+                    flash('Correct answer is required for Fill in the Blank!', 'danger')
+                    return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+                question.correct_answer = correct_answer
+
+            elif question_type == 'sa':
+                expected_answer = request.form.get('expected_answer')
+                if not expected_answer:
+                    flash('Expected answer is required for Short Answer questions!', 'danger')
+                    return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+                question.expected_answer = expected_answer
+            
+            db.session.add(question)
+            db.session.commit()
+            flash('Question added successfully!', 'success')
             return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
-        
-        # Convert correct_option from a/b/c/d to 1/2/3/4
-        correct_option_map = {'a': 1, 'b': 2, 'c': 3, 'd': 4}
-        correct_option = correct_option_map.get(correct_option.lower(), 1)
-        
-        question = Question(
-            quiz_id=quiz_id,
-            question_statement=question_statement,
-            option1=option1,
-            option2=option2,
-            option3=option3,
-            option4=option4,
-            correct_option=correct_option
-        )
-        db.session.add(question)
-        db.session.commit()
-        flash('Question added successfully!', 'success')
-        return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+            
+        except ValueError as e:
+            flash(f'Invalid input: {str(e)}', 'danger')
+            return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding question. Please try again.', 'danger')
+            return redirect(url_for('admin.manage_questions', quiz_id=quiz_id))
     
-    return render_template('admin/questions.html', quiz=quiz)
+    return render_template('admin/manage_questions.html', quiz=quiz)
 
 @bp.route('/questions/<int:question_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -430,4 +478,101 @@ def delete_user(user_id):
         db.session.rollback()
         flash('Error deleting user. Make sure there are no associated quiz attempts.', 'danger')
     
-    return redirect(url_for('admin.manage_users')) 
+    return redirect(url_for('admin.manage_users'))
+
+@bp.route('/quiz/create', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_quiz():
+    if request.method == 'POST':
+        chapter_id = request.form.get('chapter_id')
+        date = datetime.strptime(request.form.get('date'), '%Y-%m-%d')
+        duration = int(request.form.get('duration'))
+        remarks = request.form.get('remarks')
+        
+        # Get marking system settings
+        correct_points = float(request.form.get('correct_points', 1.0))
+        wrong_penalty = float(request.form.get('wrong_penalty', 0.0))
+        allow_partial = request.form.get('allow_partial') == 'true'
+        
+        quiz = Quiz(
+            chapter_id=chapter_id,
+            date=date,
+            duration=duration,
+            remarks=remarks,
+            correct_answer_points=correct_points,
+            wrong_answer_penalty=wrong_penalty,
+            partial_credit=allow_partial
+        )
+        db.session.add(quiz)
+        db.session.commit()
+        
+        return redirect(url_for('admin.edit_quiz', quiz_id=quiz.id))
+    
+    chapters = Chapter.query.all()
+    return render_template('admin/create_quiz.html', chapters=chapters)
+
+@bp.route('/quiz/<int:quiz_id>/add_question', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_question(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    if request.method == 'POST':
+        question_type = request.form.get('question_type')
+        question = Question(
+            quiz_id=quiz_id,
+            question_type=question_type,
+            question_statement=request.form.get('question_statement'),
+            difficulty=int(request.form.get('difficulty', 1)),
+            tags=request.form.get('tags', '')
+        )
+        
+        if question_type == 'mcq':
+            question.option1 = request.form.get('option1')
+            question.option2 = request.form.get('option2')
+            question.option3 = request.form.get('option3')
+            question.option4 = request.form.get('option4')
+            question.correct_option = int(request.form.get('correct_option'))
+        
+        elif question_type == 'true_false':
+            question.option1 = 'True'
+            question.option2 = 'False'
+            question.correct_option = 1 if request.form.get('correct_answer') == 'true' else 2
+        
+        elif question_type == 'fill_blank':
+            question.correct_answer = request.form.get('correct_answer')
+        
+        elif question_type == 'matching':
+            pairs = {}
+            pair_count = int(request.form.get('pair_count', 0))
+            for i in range(pair_count):
+                left = request.form.get(f'left_{i}')
+                right = request.form.get(f'right_{i}')
+                if left and right:
+                    pairs[f'pair{i+1}'] = [left, right]
+            question.matching_pairs = pairs
+        
+        elif question_type == 'short_answer':
+            question.expected_answer = request.form.get('expected_answer')
+        
+        elif question_type == 'image':
+            # Handle image upload
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+                    question.image_url = filename
+            question.correct_answer = request.form.get('image_answer')
+        
+        db.session.add(question)
+        db.session.commit()
+        
+        return redirect(url_for('admin.edit_quiz', quiz_id=quiz_id))
+    
+    return render_template('admin/add_question.html', quiz=quiz)
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'} 
