@@ -5,8 +5,19 @@ Quiz Outcome for {{ quiz.chapter.name }} - Quiz Master V1
 {% endblock %}
 
 {% block content %}
-{% set percentage = (score.total_scored / score.total_questions) * 100 %}
+{% set percentage = (score.total_score / score.max_possible_score) * 100 %}
 <div class="container-fluid fade-in">
+    <!-- Celebration Section -->
+    {% if percentage == 100 or celebrate %}
+    <div id="fireworks-container" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;"></div>
+    <div class="celebration-message" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:10000; text-align:center; color:white; text-shadow:0 0 10px rgba(255,255,255,0.8);">
+        <h1 class="display-4 mb-4">🎉 Perfect Score! You're Amazing!</h1>
+        <button class="btn btn-lg btn-light shadow-lg pulse-animation" onclick="document.querySelector('.celebration-message').remove(); stopFireworks();">
+            Continue
+        </button>
+    </div>
+    {% endif %}
+
     <!-- Page Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4" id="header-section">
         <div>
@@ -101,7 +112,7 @@ Quiz Outcome for {{ quiz.chapter.name }} - Quiz Master V1
                     </tr>
                     <tr>
                         <th scope="row">Completion Date</th>
-                        <td>{{ score.timestamp.strftime('%d %b %Y, %I:%M %p') }}</td>
+                        <td>{{ score.completed_at.strftime('%d %b %Y, %I:%M %p') }}</td>
                     </tr>
                     <tr>
                         <th scope="row">Allocated Time</th>
@@ -156,4 +167,153 @@ Quiz Outcome for {{ quiz.chapter.name }} - Quiz Master V1
         </a>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.celebration-message {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2rem;
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    text-align: center;
+    color: white;
+    text-shadow: 0 0 10px rgba(255,255,255,0.8);
+    animation: fadeIn 1s ease-out;
+}
+
+.celebration-message h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.btn-continue {
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    border: none;
+    color: white;
+    padding: 10px 30px;
+    border-radius: 25px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.btn-continue:hover {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    {% if percentage == 100 or celebrate %}
+    // Create canvas for click effects
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '9999';
+    document.body.appendChild(canvas);
+    
+    // Setup canvas context
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Sparkle effect on click
+    document.addEventListener('click', (e) => {
+        const x = e.clientX;
+        const y = e.clientY;
+        
+        confetti({
+            particleCount: 15,
+            spread: 30,
+            origin: {
+                x: x / window.innerWidth,
+                y: y / window.innerHeight
+            },
+            colors: ['#FFD700', '#FFA500', '#FF4500', '#00FF00', '#00FFFF', '#FF69B4'],
+            shapes: ['star'],
+            scalar: 0.7,
+            ticks: 50
+        });
+    });
+    
+    // Continuous gentle confetti rain
+    function createConfettiRain() {
+        const colors = ['#FFD700', '#FFA500', '#FF4500', '#00FF00', '#00FFFF', '#FF69B4'];
+        
+        // Create confetti from random positions at the top
+        for (let i = 0; i < 3; i++) { // Launch 3 pieces at a time
+            confetti({
+                particleCount: 1,
+                startVelocity: 0,
+                ticks: 200,
+                origin: {
+                    x: Math.random(),
+                    y: -0.1 // Start slightly above the viewport
+                },
+                colors: [colors[Math.floor(Math.random() * colors.length)]],
+                shapes: ['circle', 'square'],
+                scalar: Math.random() * 0.6 + 0.4, // Random size
+                gravity: 0.3, // Slower fall
+                drift: Math.random() - 0.5, // Random horizontal drift
+                disableForReducedMotion: true // Accessibility
+            });
+        }
+    }
+    
+    // Start the confetti rain immediately
+    createConfettiRain();
+    
+    // Continue the rain with interval
+    const rainInterval = setInterval(createConfettiRain, 200);
+    
+    // Cleanup function
+    window.stopCelebration = function() {
+        confetti.reset();
+        canvas.remove();
+        clearInterval(rainInterval);
+    };
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    // Update the continue button to use stopCelebration
+    document.querySelector('.celebration-message button').onclick = function() {
+        document.querySelector('.celebration-message').remove();
+        window.stopCelebration();
+    };
+    {% endif %}
+});
+</script>
 {% endblock %}
