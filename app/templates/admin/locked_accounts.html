@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Locked Accounts - Quiz Master V1{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-lock me-2"></i>Locked User Accounts</h4>
+                </div>
+                <div class="card-body">
+                    {% if locked_users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Failed Attempts</th>
+                                        <th>Last Login</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in locked_users %}
+                                        <tr>
+                                            <td>{{ user.full_name }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>{{ user.login_attempts }}</td>
+                                            <td>{{ user.last_login|default('Never', true) }}</td>
+                                            <td>
+                                                <form action="{{ url_for('auth.unlock_account', user_id=user.id) }}" method="POST">
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-unlock me-1"></i> Unlock
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> There are currently no locked user accounts.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-3">
+                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Users
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

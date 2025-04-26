@@ -22,10 +22,24 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
         
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('user.dashboard' if not user.is_admin else 'admin.dashboard'))
-        flash('Invalid email or password', 'danger')
+        if user:
+            if user.is_locked:
+                flash('Account is locked due to too many failed attempts. Please contact an administrator.', 'danger')
+                return render_template('auth/login.html')
+                
+            if user.check_password(password):
+                login_user(user)
+                user.update_login_timestamp()
+                flash(f'Welcome back, {user.full_name}!', 'success')
+                return redirect(url_for('user.dashboard' if not user.is_admin else 'admin.dashboard'))
+            else:
+                user.increment_login_attempt()
+                if user.is_locked:
+                    flash('Account locked due to too many failed login attempts. Please contact an administrator.', 'danger')
+                else:
+                    flash('Invalid email or password', 'danger')
+        else:
+            flash('Invalid email or password', 'danger')
     
     return render_template('auth/login.html')
 
@@ -64,4 +78,16 @@ def register():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('auth.login')) 
+    return redirect(url_for('auth.login'))
+
+@bp.route('/unlock_account/<int:user_id>', methods=['POST'])
+@login_required
+def unlock_account(user_id):
+    if not current_user.is_admin:
+        flash('Admin access required', 'danger')
+        return redirect(url_for('auth.login'))
+        
+    user = User.query.get_or_404(user_id)
+    user.unlock_account()
+    flash(f'Account for {user.email} has been unlocked', 'success')
+    return redirect(url_for('admin.manage_users')) 

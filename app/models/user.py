@@ -16,6 +16,9 @@ class User(UserMixin, db.Model):
     date_of_birth = db.Column(db.Date)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+    login_attempts = db.Column(db.Integer, default=0)
+    is_locked = db.Column(db.Boolean, default=False)
     scores = db.relationship('Score', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -23,6 +26,22 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def update_login_timestamp(self):
+        self.last_login = datetime.utcnow()
+        self.login_attempts = 0
+        db.session.commit()
+
+    def increment_login_attempt(self):
+        self.login_attempts += 1
+        if self.login_attempts >= 5:  # Lock account after 5 failed attempts
+            self.is_locked = True
+        db.session.commit()
+
+    def unlock_account(self):
+        self.is_locked = False
+        self.login_attempts = 0
+        db.session.commit()
 
     def __repr__(self):
         return f'<User {self.email}>' 

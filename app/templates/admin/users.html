@@ -171,6 +171,11 @@
             </h1>
             <p class="qm-subtitle">View and manage registered users</p>
         </div>
+        <div class="col-auto">
+            <a href="{{ url_for('admin.locked_accounts') }}" class="btn btn-outline-danger">
+                <i class="fas fa-lock me-1"></i> View Locked Accounts
+            </a>
+        </div>
     </header>
 
     <section class="qm-panel">

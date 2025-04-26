@@ -437,6 +437,13 @@ def manage_users():
     users = User.query.filter_by(is_admin=False).all()
     return render_template('admin/users.html', users=users)
 
+@bp.route('/locked-accounts')
+@login_required
+@admin_required
+def locked_accounts():
+    locked_users = User.query.filter_by(is_locked=True).all()
+    return render_template('admin/locked_accounts.html', locked_users=locked_users)
+
 @bp.route('/api/subjects')
 @login_required
 @admin_required
